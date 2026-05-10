@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电子书平台</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <button class="menu-toggle" id="menuToggle">&#9776;</button>
+    <div class="overlay" id="overlay"></div>
+
+    <div class="layout">
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-user">
+                <small id="userInfo"></small>
+                <a href="#" id="logoutBtn">退出</a>
+            </div>
+            <h3 id="bookTitle" class="sidebar-title">加载中...</h3>
+            <ul class="toc-list" id="tocList"></ul>
+
+            <div class="sidebar-ai-toc">
+                <div class="ai-toc-input-row">
+                    <input type="text" id="aiTocPrompt" placeholder="AI 调整目录...">
+                    <button id="aiTocGenerate">发送</button>
+                </div>
+                <div id="aiTocPreview" style="display:none;">
+                    <pre id="aiTocJSON" class="ai-toc-preview"></pre>
+                    <div style="display:flex;gap:0.3rem;">
+                        <button id="aiTocApply" style="flex:1;font-size:0.75rem;padding:0.2rem;">应用</button>
+                        <button id="aiTocCancel" class="outline secondary" style="flex:1;font-size:0.75rem;padding:0.2rem;">取消</button>
+                    </div>
+                </div>
+                <p id="aiTocStatus" style="display:none;font-size:0.75rem;margin:0.3rem 0 0;"></p>
+            </div>
+        </nav>
+        <div class="resize-handle" id="resizeHandle"></div>
+        <div class="main-content">
+            <div class="top-bar">
+                <h1 id="chapterTitle"></h1>
+                <div class="actions">
+<a id="editBtn" href="#" role="button" class="outline">编辑</a>
+                    <a id="historyBtn" href="#" role="button" class="outline secondary">历史</a>
+                </div>
+            </div>
+            <article id="content">
+                <p>请从左侧目录选择章节。</p>
+            </article>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>

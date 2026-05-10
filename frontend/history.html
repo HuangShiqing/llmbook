@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>版本历史 — 电子书平台</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div style="padding: 1rem; max-width: 60rem; margin: 0 auto;">
+        <div class="top-bar">
+            <h1 id="pageTitle">版本历史</h1>
+            <div class="actions">
+                <a id="backBtn" href="/" role="button" class="outline secondary">返回</a>
+            </div>
+        </div>
+
+        <p><small>选择两个版本进行对比：</small></p>
+        <ul class="history-list" id="historyList">
+            <li>加载中...</li>
+        </ul>
+
+        <div style="margin-top:1rem;">
+            <button id="diffBtn" class="outline" disabled>对比选中的两个版本</button>
+        </div>
+
+        <div class="diff-container" id="diffContainer" style="display:none;"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html-ui.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script>
+        (function () {
+            if (!requireAuth()) return;
+
+            const bookId = getParam('book') || 'my-first-book';
+            const historyList = document.getElementById('historyList');
+            const diffBtn = document.getElementById('diffBtn');
+            const diffContainer = document.getElementById('diffContainer');
+            const backBtn = document.getElementById('backBtn');
+
+            backBtn.href = `/?book=${bookId}`;
+
+            const selected = new Set();
+
+            async function loadHistory() {
+                const data = await apiJSON(`/api/books/${bookId}/history`);
+                if (!data.length) {
+                    historyList.innerHTML = '<li>暂无版本历史</li>';
+                    return;
+                }
+                historyList.innerHTML = '';
+                data.forEach(commit => {
+                    const li = document.createElement('li');
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.value = commit.hash;
+                    cb.addEventListener('change', () => {
+                        if (cb.checked) {
+                            if (selected.size >= 2) {
+                                const first = selected.values().next().value;
+                                selected.delete(first);
+                                historyList.querySelector(`input[value="${first}"]`).checked = false;
+                            }
+                            selected.add(commit.hash);
+                        } else {
+                            selected.delete(commit.hash);
+                        }
+                        diffBtn.disabled = selected.size !== 2;
+                    });
+
+                    const date = new Date(commit.date).toLocaleString('zh-CN');
+                    li.innerHTML = '';
+                    li.appendChild(cb);
+
+                    const hashSpan = document.createElement('span');
+                    hashSpan.className = 'hash';
+                    hashSpan.textContent = commit.short_hash;
+                    li.appendChild(hashSpan);
+
+                    const msgSpan = document.createElement('span');
+                    msgSpan.textContent = commit.message;
+                    msgSpan.style.flex = '1';
+                    li.appendChild(msgSpan);
+
+                    const dateSpan = document.createElement('span');
+                    dateSpan.className = 'date';
+                    dateSpan.textContent = date;
+                    li.appendChild(dateSpan);
+
+                    historyList.appendChild(li);
+                });
+            }
+
+            diffBtn.addEventListener('click', async () => {
+                const [c1, c2] = [...selected];
+                diffBtn.setAttribute('aria-busy', 'true');
+                try {
+                    const data = await apiJSON(`/api/books/${bookId}/diff/${c1}/${c2}`);
+                    diffContainer.style.display = 'block';
+                    const diff2htmlUi = new Diff2HtmlUI(diffContainer, data.diff, {
+                        drawFileList: false,
+                        matching: 'lines',
+                        outputFormat: 'side-by-side',
+                    });
+                    diff2htmlUi.draw();
+                } catch (e) {
+                    diffContainer.style.display = 'block';
+                    diffContainer.innerHTML = `<p style="padding:1rem; color:var(--pico-del-color);">${e.message}</p>`;
+                }
+                diffBtn.removeAttribute('aria-busy');
+            });
+
+            loadHistory();
+        })();
+    </script>
+</body>
+</html>

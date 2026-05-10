@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编辑 — 电子书平台</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div style="padding: 1rem;">
+        <div class="top-bar">
+            <h1 id="pageTitle">编辑</h1>
+            <div class="actions">
+                <button id="previewBtn" class="outline">预览</button>
+                <button id="saveBtn">保存</button>
+                <a id="backBtn" href="/" role="button" class="outline secondary">返回</a>
+            </div>
+        </div>
+
+        <div class="mobile-tabs">
+            <button id="tabEditor" class="outline">编辑</button>
+            <button id="tabAI" class="outline secondary">AI 助手</button>
+        </div>
+
+        <div class="editor-layout">
+            <div class="editor-panel" id="editorPanel">
+                <textarea id="editor" placeholder="在此编辑 Markdown 内容..."></textarea>
+            </div>
+            <div class="ai-panel" id="aiPanel">
+                <h4 style="margin:0 0 0.5rem;">AI 助手</h4>
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input-row">
+                    <input type="text" id="chatInput" placeholder="输入指令，如：帮我扩写第二段">
+                    <button id="chatSend">发送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div class="preview-modal" id="previewModal">
+        <div class="preview-content">
+            <div style="display:flex; justify-content:space-between; margin-bottom:1rem;">
+                <h3 style="margin:0;">预览</h3>
+                <button class="outline" id="closePreview" style="padding:0.2rem 0.6rem;">关闭</button>
+            </div>
+            <article id="previewArea"></article>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/editor.js"></script>
+</body>
+</html>

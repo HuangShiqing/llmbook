@@ -1,0 +1,15 @@
+services:
+  ebook:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "8080:8000"
+    volumes:
+      - ../books:/app/books
+    environment:
+      - JWT_SECRET=change-me-to-a-random-string
+      - LITELLM_MODEL=gpt-4o-mini
+      - LITELLM_API_KEY=${LITELLM_API_KEY}
+      - LITELLM_API_BASE=${LITELLM_API_BASE}
+    restart: unless-stopped

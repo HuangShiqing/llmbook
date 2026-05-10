@@ -1,0 +1,430 @@
+:root {
+    --sidebar-width: 260px;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+/* Layout */
+.layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: var(--sidebar-width);
+    min-width: 150px;
+    max-width: 500px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--pico-muted-border-color);
+    padding: 1rem;
+    overflow-y: auto;
+    max-height: 100vh;
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    --pico-nav-element-spacing-vertical: 0.1rem;
+    --pico-nav-element-spacing-horizontal: 0;
+    --pico-nav-link-spacing-vertical: 0.1rem;
+    --pico-nav-link-spacing-horizontal: 0;
+}
+
+.sidebar-user {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.sidebar-user a {
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.sidebar-title {
+    margin: 0 0 0.4rem 0;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+    line-height: 1.2;
+    flex-shrink: 0;
+}
+
+.sidebar-ai-toc {
+    margin-top: auto;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--pico-muted-border-color);
+    flex-shrink: 0;
+}
+
+.ai-toc-input-row {
+    display: flex;
+    gap: 0.3rem;
+}
+
+.ai-toc-input-row input {
+    flex: 1;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    margin: 0;
+}
+
+.ai-toc-input-row button {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.ai-toc-preview {
+    max-height: 20vh;
+    overflow: auto;
+    font-size: 0.7rem;
+    background: var(--pico-secondary-focus);
+    padding: 0.5rem;
+    border-radius: 4px;
+    margin: 0.3rem 0;
+}
+
+.resize-handle {
+    width: 4px;
+    cursor: col-resize;
+    background: transparent;
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+
+.resize-handle:hover,
+.resize-handle.dragging {
+    background: var(--pico-primary);
+}
+
+.main-content {
+    flex: 1;
+    padding: 1.5rem 2rem;
+    min-width: 0;
+    max-width: 50rem;
+}
+
+/* TOC - override Pico.css nav ul/li horizontal styles */
+.sidebar,
+.sidebar ul,
+.sidebar ul li {
+    display: block;
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar ul li a {
+    display: block;
+    white-space: normal;
+}
+
+.toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.toc-list .toc-list {
+    padding-left: 0;
+}
+
+.toc-list li {
+    margin: 0;
+    padding: 0;
+}
+
+.toc-list li.collapsed > .toc-list {
+    display: none;
+}
+
+.toc-list a {
+    display: block;
+    padding: 0.4rem 0.8rem;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+nav.sidebar .toc-list > li > a.toc-group {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--pico-muted-color);
+    cursor: pointer;
+    padding: 0.15rem 0.8rem;
+}
+
+.toc-list a.toc-group::before {
+    content: '▾ ';
+    font-size: 0.7rem;
+}
+
+.toc-list li.collapsed > a.toc-group::before {
+    content: '▸ ';
+}
+
+nav.sidebar .toc-list .toc-list > li > a {
+    padding: 0.1rem 0.8rem;
+}
+
+.toc-list a:hover,
+.toc-list a.active {
+    background: var(--pico-primary-focus);
+}
+
+/* Mobile hamburger */
+.menu-toggle {
+    display: none;
+    position: fixed;
+    top: 0.8rem;
+    left: 0.8rem;
+    z-index: 1001;
+    background: var(--pico-primary);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 999;
+}
+
+/* Top bar */
+.top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.top-bar h1 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.top-bar .actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.top-bar .actions a,
+.top-bar .actions button {
+    font-size: 0.85rem;
+    padding: 0.3rem 0.8rem;
+}
+
+/* Editor layout */
+.editor-layout {
+    display: flex;
+    gap: 1rem;
+    height: calc(100vh - 8rem);
+}
+
+.editor-panel,
+.ai-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.editor-panel textarea {
+    flex: 1;
+    resize: none;
+    font-family: monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.ai-panel {
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 0.5rem;
+}
+
+.chat-msg {
+    margin-bottom: 0.8rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.chat-msg.user {
+    background: var(--pico-primary-focus);
+    margin-left: 2rem;
+}
+
+.chat-msg.ai {
+    background: var(--pico-secondary-focus);
+    margin-right: 2rem;
+}
+
+.chat-input-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.chat-input-row input {
+    flex: 1;
+    margin: 0;
+}
+
+.chat-input-row button {
+    flex-shrink: 0;
+    margin: 0;
+}
+
+/* History */
+.history-list {
+    list-style: none;
+    padding: 0;
+}
+
+.history-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+    font-size: 0.9rem;
+    flex-wrap: wrap;
+}
+
+.history-list .hash {
+    font-family: monospace;
+    color: var(--pico-primary);
+    font-size: 0.85rem;
+}
+
+.history-list .date {
+    color: var(--pico-muted-color);
+    font-size: 0.8rem;
+}
+
+.diff-container {
+    margin-top: 1rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: 8px;
+    overflow: auto;
+}
+
+/* Mobile tabs for editor */
+.mobile-tabs {
+    display: none;
+    margin-bottom: 0.5rem;
+}
+
+.mobile-tabs button {
+    flex: 1;
+}
+
+/* Preview modal */
+.preview-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+}
+
+.preview-modal.open {
+    display: flex;
+}
+
+.preview-content {
+    background: var(--pico-background-color);
+    border-radius: 8px;
+    padding: 2rem;
+    max-width: 50rem;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Login */
+.login-container {
+    max-width: 24rem;
+    margin: 10vh auto;
+    padding: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: block;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: calc(-1 * var(--sidebar-width));
+        top: 0;
+        height: 100vh;
+        z-index: 1000;
+        background: var(--pico-background-color);
+        transition: left 0.3s ease;
+    }
+
+    .sidebar.open {
+        left: 0;
+    }
+
+    .overlay.open {
+        display: block;
+    }
+
+    .main-content {
+        padding: 1rem;
+        padding-top: 3.5rem;
+    }
+
+    .editor-layout {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .editor-panel,
+    .ai-panel {
+        height: 50vh;
+    }
+
+    .mobile-tabs {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .editor-layout .hidden-mobile {
+        display: none;
+    }
+}

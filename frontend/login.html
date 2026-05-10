@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 — 电子书平台</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="login-container">
+        <h2>电子书平台</h2>
+        <form id="loginForm">
+            <label for="username">用户名</label>
+            <input type="text" id="username" required autofocus>
+            <label for="password">密码</label>
+            <input type="password" id="password" required>
+            <button type="submit" id="loginBtn">登录</button>
+        </form>
+        <p style="text-align:center; margin-top:1rem;">
+            <small>没有账号？<a href="#" id="toggleMode">注册</a></small>
+        </p>
+        <p id="error" style="color:var(--pico-del-color); display:none;"></p>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script>
+        if (getToken()) window.location.href = '/';
+
+        let isRegister = false;
+        const form = document.getElementById('loginForm');
+        const btn = document.getElementById('loginBtn');
+        const toggle = document.getElementById('toggleMode');
+        const errorEl = document.getElementById('error');
+
+        toggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            isRegister = !isRegister;
+            btn.textContent = isRegister ? '注册' : '登录';
+            toggle.textContent = isRegister ? '登录' : '注册';
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorEl.style.display = 'none';
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password }),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || '操作失败');
+                setAuth(data.token, data.username);
+                window.location.href = '/';
+            } catch (err) {
+                errorEl.textContent = err.message;
+                errorEl.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
