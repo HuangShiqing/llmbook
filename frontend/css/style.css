@@ -57,40 +57,140 @@ body {
     flex-shrink: 0;
 }
 
-.sidebar-ai-toc {
-    margin-top: auto;
-    padding-top: 0.5rem;
+.main-content {
+    flex: 1;
+    padding: 1.5rem 2rem;
+    min-width: 0;
+    max-width: 50rem;
+    display: flex;
+    flex-direction: column;
+    max-height: 100vh;
+    overflow: hidden;
+}
+
+.main-content > article {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+/* AI TOC Panel */
+.ai-toc-panel {
+    display: none;
     border-top: 1px solid var(--pico-muted-border-color);
+    padding: 1rem 0;
     flex-shrink: 0;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.ai-toc-panel.open {
+    display: block;
+}
+
+.ai-toc-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.8rem;
+}
+
+.ai-toc-panel-header span {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.ai-toc-panel-header button {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    margin: 0;
+}
+
+.ai-toc-messages {
+    max-height: 20vh;
+    overflow-y: auto;
+    margin-bottom: 0.8rem;
+}
+
+.ai-toc-messages:empty {
+    display: none;
+}
+
+.ai-toc-messages .chat-msg {
+    margin-bottom: 0.5rem;
+    padding: 0.4rem 0.7rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.ai-toc-messages .chat-msg.user {
+    background: var(--pico-primary-focus);
+    margin-left: 2rem;
+}
+
+.ai-toc-messages .chat-msg.ai {
+    background: var(--pico-secondary-focus);
+    margin-right: 2rem;
 }
 
 .ai-toc-input-row {
     display: flex;
-    gap: 0.3rem;
+    gap: 0.5rem;
 }
 
 .ai-toc-input-row input {
     flex: 1;
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
     margin: 0;
 }
 
 .ai-toc-input-row button {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-    margin: 0;
     flex-shrink: 0;
+    margin: 0;
 }
 
-.ai-toc-preview {
-    max-height: 20vh;
-    overflow: auto;
-    font-size: 0.7rem;
-    background: var(--pico-secondary-focus);
-    padding: 0.5rem;
-    border-radius: 4px;
-    margin: 0.3rem 0;
+.ai-toc-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.ai-toc-actions button {
+    font-size: 0.85rem;
+    padding: 0.3rem 1rem;
+    margin: 0;
+}
+
+#aiTocStatus {
+    font-size: 0.85rem;
+    margin: 0.5rem 0;
+}
+
+/* TOC Diff styles */
+.toc-diff-added {
+    color: #22863a;
+    background: rgba(34, 134, 58, 0.1);
+}
+
+.toc-diff-removed {
+    color: #cb2431;
+    background: rgba(203, 36, 49, 0.1);
+    text-decoration: line-through;
+}
+
+.toc-diff-unchanged {
+    opacity: 0.6;
+}
+
+.ai-toc-hint {
+    font-size: 0.8rem;
+    margin: 0.5rem 0;
+    color: var(--pico-muted-color);
+}
+
+.ai-toc-hint span {
+    font-weight: 600;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
 }
 
 .resize-handle {
@@ -104,13 +204,6 @@ body {
 .resize-handle:hover,
 .resize-handle.dragging {
     background: var(--pico-primary);
-}
-
-.main-content {
-    flex: 1;
-    padding: 1.5rem 2rem;
-    min-width: 0;
-    max-width: 50rem;
 }
 
 /* TOC - override Pico.css nav ul/li horizontal styles */

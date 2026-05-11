@@ -40,11 +40,11 @@ async def generate_stream(prompt: str, context: str = "") -> AsyncGenerator[str,
             yield delta.content
 
 
-async def generate_toc(current_toc_json: str, prompt: str) -> str:
-    messages = [
-        {"role": "system", "content": TOC_SYSTEM_PROMPT},
-        {"role": "user", "content": f"当前目录结构：\n{current_toc_json}\n\n修改指令：{prompt}"},
-    ]
+async def generate_toc(current_toc_json: str, prompt: str, history: list[dict] = None) -> str:
+    messages = [{"role": "system", "content": TOC_SYSTEM_PROMPT}]
+    if history:
+        messages.extend(history)
+    messages.append({"role": "user", "content": f"当前目录结构：\n{current_toc_json}\n\n修改指令：{prompt}"})
 
     kwargs = dict(model=LITELLM_MODEL, messages=messages)
     if LITELLM_API_BASE:

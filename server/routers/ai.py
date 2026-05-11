@@ -18,6 +18,7 @@ class GenerateRequest(BaseModel):
 class TOCRequest(BaseModel):
     book_id: str
     prompt: str
+    messages: list[dict] = []
 
 
 async def _sse_stream(prompt: str, context: str):
@@ -55,7 +56,7 @@ async def rewrite(req: GenerateRequest, _: str = Depends(get_current_user)):
 async def ai_toc(req: TOCRequest, _: str = Depends(get_current_user)):
     toc = git_service.get_toc(req.book_id)
     current_json = json.dumps(toc["chapters"], ensure_ascii=False)
-    result = await llm_service.generate_toc(current_json, req.prompt)
+    result = await llm_service.generate_toc(current_json, req.prompt, req.messages)
     # Strip markdown code block markers if present
     result = result.strip()
     if result.startswith("```"):

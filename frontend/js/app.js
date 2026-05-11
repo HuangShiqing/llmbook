@@ -15,10 +15,12 @@
     const overlay = document.getElementById('overlay');
     const userInfo = document.getElementById('userInfo');
     const logoutBtn = document.getElementById('logoutBtn');
+    const aiTocToggle = document.getElementById('aiTocToggle');
+    const aiTocPanel = document.getElementById('aiTocPanel');
+    const aiTocClose = document.getElementById('aiTocClose');
     const aiTocPrompt = document.getElementById('aiTocPrompt');
     const aiTocGenerate = document.getElementById('aiTocGenerate');
     const aiTocPreview = document.getElementById('aiTocPreview');
-    const aiTocJSON = document.getElementById('aiTocJSON');
     const aiTocApply = document.getElementById('aiTocApply');
     const aiTocCancel = document.getElementById('aiTocCancel');
     const aiTocStatus = document.getElementById('aiTocStatus');
@@ -68,6 +70,7 @@
         const toc = await apiJSON(`/api/books/${bookId}/toc`);
         bookTitle.textContent = toc.title;
         document.title = toc.title;
+        currentTocChapters = toc.chapters;
         tocList.innerHTML = '';
         renderTocItems(toc.chapters, tocList, 0);
         autoFitSidebar();
@@ -170,34 +173,179 @@
         }
     }
 
-    // AI TOC
+    // AI TOC Panel toggle
+    aiTocToggle.addEventListener('click', () => {
+        aiTocPanel.classList.toggle('open');
+    });
+    aiTocClose.addEventListener('click', () => {
+        aiTocPanel.classList.remove('open');
+    });
+
+    // AI TOC multi-turn
     let pendingTOC = null;
+    let tocChatHistory = [];
+    let currentTocChapters = null;
+    const aiTocMessages = document.getElementById('aiTocMessages');
+
+    function appendTocMsg(role, text) {
+        const div = document.createElement('div');
+        div.className = 'chat-msg ' + role;
+        div.textContent = text;
+        aiTocMessages.appendChild(div);
+        aiTocMessages.scrollTop = aiTocMessages.scrollHeight;
+    }
+
+    function countLeaves(items) {
+        let n = 0;
+        for (const item of items) {
+            if (item.children && item.children.length) n += countLeaves(item.children);
+            else n++;
+        }
+        return n;
+    }
+
+    function collectAllIds(items) {
+        const ids = new Map();
+        function walk(list) {
+            for (const item of list) {
+                ids.set(item.id, item.title);
+                if (item.children) walk(item.children);
+            }
+        }
+        walk(items);
+        return ids;
+    }
+
+    function renderTocDiff(oldItems, newItems) {
+        tocList.innerHTML = '';
+        renderMergedDiff(oldItems, newItems, tocList, 0);
+    }
+
+    function renderMergedDiff(oldItems, newItems, parentEl, depth) {
+        const oldIds = new Set(oldItems.map(i => i.id));
+        const newMap = new Map(newItems.map(i => [i.id, i]));
+        const rendered = new Set();
+
+        // First pass: render old items in order, mark removed or show changes
+        oldItems.forEach(oldCh => {
+            if (newMap.has(oldCh.id)) {
+                const newCh = newMap.get(oldCh.id);
+                rendered.add(oldCh.id);
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.href = '#';
+                a.addEventListener('click', e => e.preventDefault());
+                if (depth > 0) a.style.paddingLeft = (0.8 + depth * 1.2) + 'rem';
+
+                if (oldCh.title !== newCh.title) {
+                    // Renamed: show old name as removed, new name as added
+                    const aOld = document.createElement('a');
+                    aOld.href = '#';
+                    aOld.addEventListener('click', e => e.preventDefault());
+                    aOld.textContent = '- ' + oldCh.title;
+                    aOld.className = 'toc-diff-removed';
+                    if (depth > 0) aOld.style.paddingLeft = (0.8 + depth * 1.2) + 'rem';
+                    li.appendChild(aOld);
+
+                    a.textContent = '+ ' + newCh.title;
+                    a.className = 'toc-diff-added';
+                } else {
+                    a.textContent = newCh.title;
+                    a.className = 'toc-diff-unchanged';
+                }
+                li.appendChild(a);
+
+                // Recurse children
+                const oldChildren = oldCh.children || [];
+                const newChildren = newCh.children || [];
+                if (oldChildren.length || newChildren.length) {
+                    const subList = document.createElement('ul');
+                    subList.className = 'toc-list';
+                    renderMergedDiff(oldChildren, newChildren, subList, depth + 1);
+                    li.appendChild(subList);
+                }
+                parentEl.appendChild(li);
+            } else {
+                // Removed node
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.textContent = '- ' + oldCh.title;
+                a.className = 'toc-diff-removed';
+                a.href = '#';
+                a.addEventListener('click', e => e.preventDefault());
+                if (depth > 0) a.style.paddingLeft = (0.8 + depth * 1.2) + 'rem';
+                li.appendChild(a);
+                parentEl.appendChild(li);
+            }
+        });
+
+        // Second pass: render new items not in old (added), in their order
+        newItems.forEach(newCh => {
+            if (!rendered.has(newCh.id)) {
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.textContent = '+ ' + newCh.title;
+                a.className = 'toc-diff-added';
+                a.href = '#';
+                a.addEventListener('click', e => e.preventDefault());
+                if (depth > 0) a.style.paddingLeft = (0.8 + depth * 1.2) + 'rem';
+                li.appendChild(a);
+
+                if (newCh.children && newCh.children.length) {
+                    const subList = document.createElement('ul');
+                    subList.className = 'toc-list';
+                    renderMergedDiff([], newCh.children, subList, depth + 1);
+                    li.appendChild(subList);
+                }
+                parentEl.appendChild(li);
+            }
+        });
+    }
+
+    function restoreTocView() {
+        tocList.innerHTML = '';
+        if (currentTocChapters) {
+            renderTocItems(currentTocChapters, tocList, 0);
+        }
+    }
 
     aiTocCancel.addEventListener('click', () => {
         aiTocPreview.style.display = 'none';
         pendingTOC = null;
+        restoreTocView();
     });
 
     aiTocGenerate.addEventListener('click', async () => {
         const prompt = aiTocPrompt.value.trim();
         if (!prompt) return;
+        aiTocPrompt.value = '';
         aiTocGenerate.setAttribute('aria-busy', 'true');
         aiTocStatus.style.display = 'block';
         aiTocStatus.textContent = 'AI 生成中...';
         aiTocPreview.style.display = 'none';
 
+        appendTocMsg('user', prompt);
+
         try {
             const data = await apiJSON('/api/ai/toc', {
                 method: 'POST',
-                body: JSON.stringify({ book_id: bookId, prompt }),
+                body: JSON.stringify({ book_id: bookId, prompt, messages: tocChatHistory }),
             });
             pendingTOC = data.chapters;
-            aiTocJSON.textContent = JSON.stringify(data.chapters, null, 2);
+
+            const summary = `已生成新目录（${data.chapters.length} 章，${countLeaves(data.chapters)} 节）`;
+            appendTocMsg('ai', summary);
+
+            tocChatHistory.push({ role: 'user', content: prompt });
+            tocChatHistory.push({ role: 'assistant', content: JSON.stringify(data.chapters) });
+
+            renderTocDiff(currentTocChapters, data.chapters);
             aiTocPreview.style.display = 'block';
             aiTocStatus.style.display = 'none';
         } catch (e) {
             aiTocStatus.textContent = '生成失败：' + e.message;
             aiTocStatus.style.color = 'var(--pico-del-color)';
+            appendTocMsg('ai', '生成失败：' + e.message);
         }
         aiTocGenerate.removeAttribute('aria-busy');
     });
@@ -213,6 +361,8 @@
             });
             aiTocPreview.style.display = 'none';
             pendingTOC = null;
+            tocChatHistory = [];
+            aiTocMessages.innerHTML = '';
             currentChapter = null;
             loadTOC();
         } catch (e) {
