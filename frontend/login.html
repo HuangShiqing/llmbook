@@ -25,7 +25,7 @@
 
     <script src="/js/api.js"></script>
     <script>
-        if (getToken()) window.location.href = '/';
+        if (getToken()) window.location.href = '/bookshelf.html';
 
         let isRegister = false;
         const form = document.getElementById('loginForm');
@@ -56,7 +56,7 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.detail || '操作失败');
                 setAuth(data.token, data.username);
-                window.location.href = '/';
+                window.location.href = '/bookshelf.html';
             } catch (err) {
                 errorEl.textContent = err.message;
                 errorEl.style.display = 'block';

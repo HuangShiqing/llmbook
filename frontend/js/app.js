@@ -1,7 +1,8 @@
 (function () {
     if (!requireAuth()) return;
 
-    const bookId = getParam('book') || 'my-first-book';
+    const bookId = getParam('book');
+    if (!bookId) { window.location.href = '/bookshelf.html'; return; }
     let currentChapter = getParam('chapter');
 
     const tocList = document.getElementById('tocList');

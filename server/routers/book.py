@@ -12,6 +12,40 @@ def list_books(_: str = Depends(get_current_user)):
     return git_service.list_books()
 
 
+class CreateBookRequest(BaseModel):
+    id: str
+    title: str
+
+
+@router.post("")
+def create_book(req: CreateBookRequest, _: str = Depends(get_current_user)):
+    try:
+        return git_service.create_book(req.id, req.title)
+    except FileExistsError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
+
+class UpdateBookRequest(BaseModel):
+    title: str | None = None
+
+
+@router.put("/{book_id}")
+def update_book(book_id: str, req: UpdateBookRequest, _: str = Depends(get_current_user)):
+    try:
+        return git_service.update_book(book_id, req.title)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.delete("/{book_id}")
+def delete_book(book_id: str, _: str = Depends(get_current_user)):
+    try:
+        git_service.delete_book(book_id)
+        return {"ok": True}
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 @router.get("/{book_id}/toc")
 def get_toc(book_id: str, _: str = Depends(get_current_user)):
     try:

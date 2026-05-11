@@ -31,6 +31,57 @@ def list_books() -> list[dict]:
     return results
 
 
+def create_book(book_id: str, title: str) -> dict:
+    book_dir = BOOKS_DIR / book_id
+    if book_dir.exists():
+        raise FileExistsError(f"书籍 {book_id} 已存在")
+    book_dir.mkdir(parents=True)
+    meta = {"title": title, "chapters": []}
+    meta_file = book_dir / "book.json"
+    meta_file.write_text(json.dumps(meta, indent=2, ensure_ascii=False))
+
+    repo = _get_repo()
+    repo.index.add([f"{book_id}/book.json"])
+    repo.index.commit(f"创建书籍：{title}")
+    return {"id": book_id, **meta}
+
+
+def update_book(book_id: str, title: str | None = None) -> dict:
+    meta_file = BOOKS_DIR / book_id / "book.json"
+    if not meta_file.exists():
+        raise FileNotFoundError(f"书籍 {book_id} 不存在")
+    meta = json.loads(meta_file.read_text())
+    if title is not None:
+        meta["title"] = title
+    meta_file.write_text(json.dumps(meta, indent=2, ensure_ascii=False))
+
+    repo = _get_repo()
+    repo.index.add([f"{book_id}/book.json"])
+    repo.index.commit(f"更新书籍信息：{meta['title']}")
+    return {"id": book_id, **meta}
+
+
+def delete_book(book_id: str) -> None:
+    book_dir = BOOKS_DIR / book_id
+    if not book_dir.exists():
+        raise FileNotFoundError(f"书籍 {book_id} 不存在")
+
+    repo = _get_repo()
+    files_to_remove = []
+    for f in book_dir.rglob("*"):
+        if f.is_file():
+            files_to_remove.append(str(f.relative_to(BOOKS_DIR)))
+            f.unlink()
+    for d in sorted(book_dir.rglob("*"), reverse=True):
+        if d.is_dir():
+            d.rmdir()
+    book_dir.rmdir()
+
+    if files_to_remove:
+        repo.index.remove(files_to_remove, working_tree=True)
+    repo.index.commit(f"删除书籍：{book_id}")
+
+
 def get_toc(book_id: str) -> dict:
     meta_file = BOOKS_DIR / book_id / "book.json"
     if not meta_file.exists():

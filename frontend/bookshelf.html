@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的书架</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <main class="bookshelf-container">
+        <div class="bookshelf-header">
+            <h1>我的书架</h1>
+            <div class="actions">
+                <button id="createBookBtn">新建书籍</button>
+                <a href="#" id="logoutBtn" class="outline secondary" role="button">退出</a>
+            </div>
+        </div>
+        <div class="book-grid" id="bookGrid">
+            <p>加载中...</p>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/bookshelf.js"></script>
+</body>
+</html>

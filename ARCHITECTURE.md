@@ -39,6 +39,7 @@ llmbook/
 │       ├── git_service.py   # Git 操作封装（读写/提交/历史/diff）
 │       └── llm_service.py   # LiteLLM 调用封装
 ├── frontend/
+│   ├── bookshelf.html       # 书架页（书籍列表、新建、删除）
 │   ├── index.html           # 阅读页（目录 + 内容 + AI 目录调整）
 │   ├── editor.html          # 编辑页（Markdown + AI 对话）
 │   ├── history.html         # 版本历史（diff2html 对比）
@@ -46,6 +47,7 @@ llmbook/
 │   ├── css/style.css        # 响应式样式
 │   └── js/
 │       ├── api.js           # API 请求封装、Token 管理、SSE 客户端
+│       ├── bookshelf.js     # 书架页逻辑
 │       ├── app.js           # 阅读页逻辑
 │       └── editor.js        # 编辑页逻辑
 ├── books/                   # [Git Submodule] 书籍数据独立仓库
@@ -92,11 +94,19 @@ FastAPI 应用 (server/main.py)
 | POST | `/api/auth/login` | 登录，返回 JWT Token |
 | POST | `/api/auth/register` | 注册 |
 
-### 书籍内容
+### 书籍管理
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/books` | 书籍列表 |
+| POST | `/api/books` | 新建书籍（id, title） |
+| PUT | `/api/books/{book_id}` | 更新书籍信息（title） |
+| DELETE | `/api/books/{book_id}` | 删除书籍及所有内容 |
+
+### 书籍内容
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
 | GET | `/api/books/{book_id}/toc` | 目录结构 |
 | GET | `/api/books/{book_id}/chapters/{chapter_id}` | 章节内容（支持 `?commit=` 历史版本） |
 | PUT | `/api/books/{book_id}/chapters/{chapter_id}` | 保存章节（自动 git commit） |
@@ -129,7 +139,6 @@ FastAPI 应用 (server/main.py)
 ```json
 {
   "title": "书名",
-  "author": "作者",
   "chapters": [
     {
       "id": "ch01",
@@ -157,6 +166,13 @@ FastAPI 应用 (server/main.py)
 ---
 
 ## 前端页面说明
+
+### 书架页 (bookshelf.html)
+
+- 书籍网格展示（卡片：书名、阅读/删除按钮）
+- 新建书籍（输入 ID、标题）
+- 删除书籍（二次确认）
+- 登录后默认落地页
 
 ### 阅读页 (index.html)
 
