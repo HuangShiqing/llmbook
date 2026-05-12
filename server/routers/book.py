@@ -13,16 +13,12 @@ def list_books(_: str = Depends(get_current_user)):
 
 
 class CreateBookRequest(BaseModel):
-    id: str
     title: str
 
 
 @router.post("")
 def create_book(req: CreateBookRequest, _: str = Depends(get_current_user)):
-    try:
-        return git_service.create_book(req.id, req.title)
-    except FileExistsError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+    return git_service.create_book(req.title)
 
 
 class UpdateBookRequest(BaseModel):
@@ -102,12 +98,13 @@ def delete_chapter(book_id: str, chapter_id: str, _: str = Depends(get_current_u
 
 class ApplyTOCRequest(BaseModel):
     chapters: list
+    message: str = ""
 
 
 @router.put("/{book_id}/toc")
 def apply_toc(book_id: str, req: ApplyTOCRequest, _: str = Depends(get_current_user)):
     try:
-        commit_hash = git_service.apply_toc(book_id, req.chapters)
+        commit_hash = git_service.apply_toc(book_id, req.chapters, req.message or None)
         return {"commit": commit_hash}
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))

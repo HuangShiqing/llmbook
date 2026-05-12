@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -44,4 +45,14 @@ def register(req: LoginRequest):
 app.include_router(book.router)
 app.include_router(ai.router)
 
-app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+app.mount("/css", StaticFiles(directory=str(FRONTEND_DIR / "css")), name="css")
+app.mount("/js", StaticFiles(directory=str(FRONTEND_DIR / "js")), name="js")
+
+
+@app.get("/{path:path}", include_in_schema=False)
+async def serve_frontend(path: str):
+    file_path = FRONTEND_DIR / path
+    if file_path.is_file():
+        return FileResponse(file_path)
+    index = FRONTEND_DIR / "index.html"
+    return FileResponse(index)

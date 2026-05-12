@@ -341,6 +341,7 @@
             tocChatHistory.push({ role: 'assistant', content: JSON.stringify(data.chapters) });
 
             renderTocDiff(currentTocChapters, data.chapters);
+            autoFitSidebar();
             aiTocPreview.style.display = 'block';
             aiTocStatus.style.display = 'none';
         } catch (e) {
@@ -355,10 +356,19 @@
         if (!pendingTOC) return;
         aiTocApply.setAttribute('aria-busy', 'true');
 
+        const userPrompts = tocChatHistory
+            .filter(m => m.role === 'user')
+            .map(m => {
+                const text = m.content.length > 50 ? m.content.slice(0, 50) + '...' : m.content;
+                return `- ${text}`;
+            });
+        const title = bookTitle.textContent || bookId;
+        const message = `调整《${title}》目录\n${userPrompts.join('\n')}`;
+
         try {
             await apiJSON(`/api/books/${bookId}/toc`, {
                 method: 'PUT',
-                body: JSON.stringify({ chapters: pendingTOC }),
+                body: JSON.stringify({ chapters: pendingTOC, message }),
             });
             aiTocPreview.style.display = 'none';
             pendingTOC = null;

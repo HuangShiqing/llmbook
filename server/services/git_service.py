@@ -1,10 +1,12 @@
 import json
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
 from git import Repo
 from git.exc import InvalidGitRepositoryError
+from pypinyin import lazy_pinyin, Style
 
 from ..config import BOOKS_DIR
 
@@ -31,10 +33,24 @@ def list_books() -> list[dict]:
     return results
 
 
-def create_book(book_id: str, title: str) -> dict:
+def _title_to_slug(title: str) -> str:
+    parts = lazy_pinyin(title, style=Style.NORMAL)
+    slug = "-".join(parts)
+    slug = re.sub(r"[^a-zA-Z0-9\-]", "", slug)
+    slug = re.sub(r"-+", "-", slug).strip("-").lower()
+    if not slug:
+        slug = "book"
+    return slug
+
+
+def create_book(title: str) -> dict:
+    base_id = _title_to_slug(title)
+    book_id = base_id
+    suffix = 2
+    while (BOOKS_DIR / book_id).exists():
+        book_id = f"{base_id}-{suffix}"
+        suffix += 1
     book_dir = BOOKS_DIR / book_id
-    if book_dir.exists():
-        raise FileExistsError(f"书籍 {book_id} 已存在")
     book_dir.mkdir(parents=True)
     meta = {"title": title, "chapters": []}
     meta_file = book_dir / "book.json"
@@ -216,10 +232,12 @@ def _collect_all_leaf_ids(items: list[dict]) -> set[str]:
     return ids
 
 
-def apply_toc(book_id: str, new_chapters: list[dict], message: str = "AI 调整目录结构") -> str:
+def apply_toc(book_id: str, new_chapters: list[dict], message: str = None) -> str:
     meta_file = BOOKS_DIR / book_id / "book.json"
     if not meta_file.exists():
         raise FileNotFoundError(f"书籍 {book_id} 不存在")
+    if not message:
+        message = "调整目录"
     meta = json.loads(meta_file.read_text())
 
     old_ids = _collect_all_leaf_ids(meta["chapters"])
@@ -240,12 +258,12 @@ def apply_toc(book_id: str, new_chapters: list[dict], message: str = "AI 调整�
                 return item["title"]
             children = item.get("children", [])
             found = _find_title(children, target_id)
-            if found:
+            if found is not None:
                 return found
-        return target_id
+        return None
 
     for fid in added:
-        title = _find_title(new_chapters, fid)
+        title = _find_title(new_chapters, fid) or fid
         file_path = BOOKS_DIR / book_id / f"{fid}.md"
         if not file_path.exists():
             file_path.write_text(f"# {title}\n")

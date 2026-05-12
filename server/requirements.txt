@@ -5,3 +5,4 @@ bcrypt==4.2.0
 gitpython==3.1.43
 litellm==1.40.0
 python-multipart==0.0.9
+pypinyin==0.51.0

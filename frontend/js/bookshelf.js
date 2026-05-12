@@ -42,13 +42,11 @@
     createBookBtn.addEventListener('click', async () => {
         const title = prompt('书籍标题：');
         if (!title) return;
-        const id = prompt('书籍 ID（英文，如 my-book）：');
-        if (!id) return;
 
         try {
             await apiJSON('/api/books', {
                 method: 'POST',
-                body: JSON.stringify({ id, title }),
+                body: JSON.stringify({ title }),
             });
             loadBooks();
         } catch (e) {
