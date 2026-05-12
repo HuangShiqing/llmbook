@@ -9,7 +9,6 @@
     const bookTitle = document.getElementById('bookTitle');
     const chapterTitle = document.getElementById('chapterTitle');
     const content = document.getElementById('content');
-    const editBtn = document.getElementById('editBtn');
     const historyBtn = document.getElementById('historyBtn');
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
@@ -21,10 +20,6 @@
     const aiTocClose = document.getElementById('aiTocClose');
     const aiTocPrompt = document.getElementById('aiTocPrompt');
     const aiTocGenerate = document.getElementById('aiTocGenerate');
-    const aiTocPreview = document.getElementById('aiTocPreview');
-    const aiTocApply = document.getElementById('aiTocApply');
-    const aiTocCancel = document.getElementById('aiTocCancel');
-    const aiTocStatus = document.getElementById('aiTocStatus');
 
     userInfo.textContent = getUsername() || '';
     logoutBtn.addEventListener('click', (e) => {
@@ -157,10 +152,11 @@
         return null;
     }
 
+    let originalContent = '';
+
     async function loadChapter(chapterId, title) {
         currentChapter = chapterId;
         chapterTitle.textContent = title || chapterId;
-        editBtn.href = `/editor.html?book=${bookId}&chapter=${chapterId}`;
 
         tocList.querySelectorAll('a').forEach(a => {
             a.classList.toggle('active', a.dataset.chapter === chapterId);
@@ -168,8 +164,10 @@
 
         try {
             const data = await apiJSON(`/api/books/${bookId}/chapters/${chapterId}`);
+            originalContent = data.content;
             content.innerHTML = marked.parse(data.content);
         } catch (e) {
+            originalContent = '';
             content.innerHTML = `<p style="color:var(--pico-del-color);">${e.message}</p>`;
         }
     }
@@ -186,6 +184,7 @@
     let pendingTOC = null;
     let tocChatHistory = [];
     let currentTocChapters = null;
+    let tocActionMsg = null;
     const aiTocMessages = document.getElementById('aiTocMessages');
 
     function appendTocMsg(role, text) {
@@ -194,6 +193,7 @@
         div.textContent = text;
         aiTocMessages.appendChild(div);
         aiTocMessages.scrollTop = aiTocMessages.scrollHeight;
+        return div;
     }
 
     function countLeaves(items) {
@@ -310,51 +310,37 @@
         }
     }
 
-    aiTocCancel.addEventListener('click', () => {
-        aiTocPreview.style.display = 'none';
+    function appendTocActions() {
+        if (tocActionMsg) tocActionMsg.remove();
+        const div = document.createElement('div');
+        div.className = 'chat-msg ai';
+        div.innerHTML = '<span style="font-size:0.85rem;">左侧目录已显示变更预览</span>';
+        const actions = document.createElement('div');
+        actions.className = 'ai-toc-actions';
+        actions.style.marginTop = '0.4rem';
+        const applyBtn = document.createElement('button');
+        applyBtn.textContent = '应用';
+        applyBtn.addEventListener('click', applyToc);
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = '取消';
+        cancelBtn.className = 'outline secondary';
+        cancelBtn.addEventListener('click', cancelToc);
+        actions.appendChild(applyBtn);
+        actions.appendChild(cancelBtn);
+        div.appendChild(actions);
+        aiTocMessages.appendChild(div);
+        aiTocMessages.scrollTop = aiTocMessages.scrollHeight;
+        tocActionMsg = div;
+    }
+
+    function cancelToc() {
+        if (tocActionMsg) { tocActionMsg.remove(); tocActionMsg = null; }
         pendingTOC = null;
         restoreTocView();
-    });
+    }
 
-    aiTocGenerate.addEventListener('click', async () => {
-        const prompt = aiTocPrompt.value.trim();
-        if (!prompt) return;
-        aiTocPrompt.value = '';
-        aiTocGenerate.setAttribute('aria-busy', 'true');
-        aiTocStatus.style.display = 'block';
-        aiTocStatus.textContent = 'AI 生成中...';
-        aiTocPreview.style.display = 'none';
-
-        appendTocMsg('user', prompt);
-
-        try {
-            const data = await apiJSON('/api/ai/toc', {
-                method: 'POST',
-                body: JSON.stringify({ book_id: bookId, prompt, messages: tocChatHistory }),
-            });
-            pendingTOC = data.chapters;
-
-            const summary = `已生成新目录（${data.chapters.length} 章，${countLeaves(data.chapters)} 节）`;
-            appendTocMsg('ai', summary);
-
-            tocChatHistory.push({ role: 'user', content: prompt });
-            tocChatHistory.push({ role: 'assistant', content: JSON.stringify(data.chapters) });
-
-            renderTocDiff(currentTocChapters, data.chapters);
-            autoFitSidebar();
-            aiTocPreview.style.display = 'block';
-            aiTocStatus.style.display = 'none';
-        } catch (e) {
-            aiTocStatus.textContent = '生成失败：' + e.message;
-            aiTocStatus.style.color = 'var(--pico-del-color)';
-            appendTocMsg('ai', '生成失败：' + e.message);
-        }
-        aiTocGenerate.removeAttribute('aria-busy');
-    });
-
-    aiTocApply.addEventListener('click', async () => {
+    async function applyToc() {
         if (!pendingTOC) return;
-        aiTocApply.setAttribute('aria-busy', 'true');
 
         const userPrompts = tocChatHistory
             .filter(m => m.role === 'user')
@@ -370,22 +356,199 @@
                 method: 'PUT',
                 body: JSON.stringify({ chapters: pendingTOC, message }),
             });
-            aiTocPreview.style.display = 'none';
             pendingTOC = null;
             tocChatHistory = [];
             aiTocMessages.innerHTML = '';
+            tocActionMsg = null;
             currentChapter = null;
             loadTOC();
         } catch (e) {
             alert('应用失败：' + e.message);
         }
-        aiTocApply.removeAttribute('aria-busy');
+    }
+
+    aiTocGenerate.addEventListener('click', async () => {
+        const prompt = aiTocPrompt.value.trim();
+        if (!prompt) return;
+        aiTocPrompt.value = '';
+        aiTocGenerate.disabled = true;
+        if (tocActionMsg) { tocActionMsg.remove(); tocActionMsg = null; }
+
+        appendTocMsg('user', prompt);
+        const statusMsg = appendTocMsg('ai', '');
+        statusMsg.setAttribute('aria-busy', 'true');
+        statusMsg.textContent = 'AI 生成中...';
+        aiTocMessages.scrollTop = aiTocMessages.scrollHeight;
+
+        try {
+            const data = await apiJSON('/api/ai/toc', {
+                method: 'POST',
+                body: JSON.stringify({ book_id: bookId, prompt, messages: tocChatHistory }),
+            });
+            pendingTOC = data.chapters;
+
+            statusMsg.removeAttribute('aria-busy');
+            statusMsg.textContent = `已生成新目录（${data.chapters.length} 章，${countLeaves(data.chapters)} 节）`;
+
+            tocChatHistory.push({ role: 'user', content: prompt });
+            tocChatHistory.push({ role: 'assistant', content: JSON.stringify(data.chapters) });
+
+            renderTocDiff(currentTocChapters, data.chapters);
+            autoFitSidebar();
+            appendTocActions();
+        } catch (e) {
+            statusMsg.removeAttribute('aria-busy');
+            statusMsg.textContent = '生成失败：' + e.message;
+            statusMsg.style.color = 'var(--pico-del-color)';
+        }
+        aiTocGenerate.disabled = false;
     });
 
     aiTocPrompt.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
             aiTocGenerate.click();
+        }
+    });
+
+    // AI Content Panel
+    const aiContentToggle = document.getElementById('aiContentToggle');
+    const aiContentPanel = document.getElementById('aiContentPanel');
+    const aiContentClose = document.getElementById('aiContentClose');
+    const aiContentPrompt = document.getElementById('aiContentPrompt');
+    const aiContentGenerate = document.getElementById('aiContentGenerate');
+    const aiContentMessages = document.getElementById('aiContentMessages');
+
+    let contentChatHistory = [];
+    let pendingContent = null;
+    let contentActionMsg = null;
+
+    aiContentToggle.addEventListener('click', () => {
+        if (!currentChapter) { alert('请先选择章节'); return; }
+        aiContentPanel.classList.toggle('open');
+    });
+    aiContentClose.addEventListener('click', () => {
+        aiContentPanel.classList.remove('open');
+    });
+
+    function appendContentMsg(role, text) {
+        const div = document.createElement('div');
+        div.className = 'chat-msg ' + role;
+        div.textContent = text;
+        aiContentMessages.appendChild(div);
+        aiContentMessages.scrollTop = aiContentMessages.scrollHeight;
+        return div;
+    }
+
+    function appendContentActions() {
+        if (contentActionMsg) contentActionMsg.remove();
+        const div = document.createElement('div');
+        div.className = 'chat-msg ai';
+        div.innerHTML = '<span style="font-size:0.85rem;">正文已显示变更预览</span>';
+        const actions = document.createElement('div');
+        actions.className = 'ai-toc-actions';
+        actions.style.marginTop = '0.4rem';
+        const applyBtn = document.createElement('button');
+        applyBtn.textContent = '应用';
+        applyBtn.addEventListener('click', applyContent);
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = '取消';
+        cancelBtn.className = 'outline secondary';
+        cancelBtn.addEventListener('click', cancelContent);
+        actions.appendChild(applyBtn);
+        actions.appendChild(cancelBtn);
+        div.appendChild(actions);
+        aiContentMessages.appendChild(div);
+        aiContentMessages.scrollTop = aiContentMessages.scrollHeight;
+        contentActionMsg = div;
+    }
+
+    function renderContentDiff(oldText, newText) {
+        const diffStr = Diff.createTwoFilesPatch('原始', '修改后', oldText, newText, '', '', { context: 3 });
+        content.innerHTML = '';
+        const diffContainer = document.createElement('div');
+        content.appendChild(diffContainer);
+        const diff2htmlUi = new Diff2HtmlUI(diffContainer, diffStr, {
+            drawFileList: false,
+            matching: 'lines',
+            outputFormat: 'line-by-line',
+        });
+        diff2htmlUi.draw();
+    }
+
+    function restoreContentView() {
+        content.innerHTML = marked.parse(originalContent);
+    }
+
+    function cancelContent() {
+        if (contentActionMsg) { contentActionMsg.remove(); contentActionMsg = null; }
+        pendingContent = null;
+        restoreContentView();
+    }
+
+    async function applyContent() {
+        if (!pendingContent) return;
+        try {
+            await apiJSON(`/api/books/${bookId}/chapters/${currentChapter}`, {
+                method: 'PUT',
+                body: JSON.stringify({ content: pendingContent }),
+            });
+            originalContent = pendingContent;
+            pendingContent = null;
+            contentChatHistory = [];
+            aiContentMessages.innerHTML = '';
+            contentActionMsg = null;
+            restoreContentView();
+        } catch (e) {
+            alert('保存失败：' + e.message);
+        }
+    }
+
+    aiContentGenerate.addEventListener('click', async () => {
+        const prompt = aiContentPrompt.value.trim();
+        if (!prompt || !currentChapter) return;
+        aiContentPrompt.value = '';
+        aiContentGenerate.disabled = true;
+        if (contentActionMsg) { contentActionMsg.remove(); contentActionMsg = null; }
+
+        appendContentMsg('user', prompt);
+        const statusMsg = appendContentMsg('ai', '');
+        statusMsg.setAttribute('aria-busy', 'true');
+        statusMsg.textContent = 'AI 生成中...';
+        aiContentMessages.scrollTop = aiContentMessages.scrollHeight;
+        let fullText = '';
+
+        try {
+            await apiSSE('/api/ai/generate', {
+                prompt: prompt,
+                context: originalContent,
+                book_id: bookId,
+                chapter_id: currentChapter,
+                messages: contentChatHistory,
+            }, (chunk) => {
+                fullText += chunk;
+            }, () => {
+                contentChatHistory.push({ role: 'user', content: prompt });
+                contentChatHistory.push({ role: 'assistant', content: fullText });
+                pendingContent = fullText;
+
+                statusMsg.removeAttribute('aria-busy');
+                statusMsg.textContent = `已生成新内容（${fullText.length} 字）`;
+                renderContentDiff(originalContent, pendingContent);
+                appendContentActions();
+            });
+        } catch (e) {
+            statusMsg.removeAttribute('aria-busy');
+            statusMsg.textContent = '生成失败：' + e.message;
+            statusMsg.style.color = 'var(--pico-del-color)';
+        }
+        aiContentGenerate.disabled = false;
+    });
+
+    aiContentPrompt.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            aiContentGenerate.click();
         }
     });
 

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>电子书平台</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css">
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -26,14 +27,27 @@
             <div class="top-bar">
                 <h1 id="chapterTitle"></h1>
                 <div class="actions">
-                    <button id="aiTocToggle" class="outline">AI 目录</button>
-                    <a id="editBtn" href="#" role="button" class="outline">编辑</a>
+                    <button id="aiContentToggle" class="outline">AI改内容</button>
+                    <button id="aiTocToggle" class="outline">AI改目录</button>
                     <a id="historyBtn" href="#" role="button" class="outline secondary">历史</a>
                 </div>
             </div>
             <article id="content">
                 <p>请从左侧目录选择章节。</p>
             </article>
+            <div class="ai-content-panel" id="aiContentPanel">
+                <div class="ai-toc-panel-header">
+                    <span>AI 内容编辑</span>
+                    <button id="aiContentClose" class="outline secondary">收起</button>
+                </div>
+                <div class="ai-toc-panel-body">
+                    <div class="ai-toc-messages" id="aiContentMessages"></div>
+                    <div class="ai-toc-input-row">
+                        <input type="text" id="aiContentPrompt" placeholder="输入指令，如：扩展这一节的内容...">
+                        <button id="aiContentGenerate">发送</button>
+                    </div>
+                </div>
+            </div>
             <div class="ai-toc-panel" id="aiTocPanel">
                 <div class="ai-toc-panel-header">
                     <span>AI 目录调整</span>
@@ -45,20 +59,14 @@
                         <input type="text" id="aiTocPrompt" placeholder="输入指令，如：把第3章拆成两章...">
                         <button id="aiTocGenerate">发送</button>
                     </div>
-                    <p id="aiTocStatus" style="display:none;"></p>
-                    <div id="aiTocPreview" style="display:none;">
-                        <p class="ai-toc-hint">左侧目录已显示变更预览：<span class="toc-diff-added">绿色=新增</span> <span class="toc-diff-removed">红色删除线=删除</span></p>
-                        <div class="ai-toc-actions">
-                            <button id="aiTocApply">应用</button>
-                            <button id="aiTocCancel" class="outline secondary">取消</button>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/diff/dist/diff.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html-ui.min.js"></script>
     <script src="/js/api.js"></script>
     <script src="/js/app.js"></script>
 </body>

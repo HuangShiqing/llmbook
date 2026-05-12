@@ -66,18 +66,6 @@ async def generate(req: GenerateRequest, _: str = Depends(get_current_user)):
     )
 
 
-@router.post("/rewrite")
-async def rewrite(req: GenerateRequest, _: str = Depends(get_current_user)):
-    if not req.context:
-        raise HTTPException(status_code=400, detail="修改内容时必须提供当前内容")
-    toc_info = _build_toc_info(req.book_id, req.chapter_id)
-    return StreamingResponse(
-        _sse_stream(req.prompt, req.context, toc_info, req.messages or None),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
-
-
 @router.post("/toc")
 async def ai_toc(req: TOCRequest, _: str = Depends(get_current_user)):
     toc = git_service.get_toc(req.book_id)

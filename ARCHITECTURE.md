@@ -40,16 +40,14 @@ llmbook/
 │       └── llm_service.py   # LiteLLM 调用封装
 ├── frontend/
 │   ├── bookshelf.html       # 书架页（书籍列表、新建、删除）
-│   ├── index.html           # 阅读页（目录 + 内容 + AI 目录调整）
-│   ├── editor.html          # 编辑页（Markdown + AI 对话）
+│   ├── index.html           # 阅读页（目录 + 内容 + AI 内容编辑 + AI 目录调整）
 │   ├── history.html         # 版本历史（diff2html 对比）
 │   ├── login.html           # 登录/注册
 │   ├── css/style.css        # 响应式样式
 │   └── js/
 │       ├── api.js           # API 请求封装、Token 管理、SSE 客户端
 │       ├── bookshelf.js     # 书架页逻辑
-│       ├── app.js           # 阅读页逻辑
-│       └── editor.js        # 编辑页逻辑
+│       ├── app.js           # 阅读页逻辑（含 AI 内容编辑、AI 目录调整）
 ├── books/                   # [Git Submodule] 书籍数据独立仓库
 │   └── my-first-book/
 │       ├── book.json        # 书籍元数据 + 层级目录结构
@@ -121,7 +119,6 @@ FastAPI 应用 (server/main.py)
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | POST | `/api/ai/generate` | 流式生成内容（SSE，支持 `messages` 多轮对话，注入目录结构定位当前章节） |
-| POST | `/api/ai/rewrite` | 流式改写内容（SSE，同上） |
 | POST | `/api/ai/toc` | AI 调整目录结构（支持 `messages` 多轮对话历史，返回 JSON） |
 
 ---
@@ -178,15 +175,9 @@ FastAPI 应用 (server/main.py)
 
 - 左侧：可拖拽宽度的侧边栏（用户信息、书名、可折叠多级目录）
 - 右侧：Markdown 渲染的章节内容
-- 底部面板（默认收起）：AI 目录调整，支持多轮对话，生成后侧边栏显示 diff 树预览（绿色新增、红色删除线删除、改名显示为删旧增新两行）
+- 底部面板 — AI 内容编辑（默认收起）：多轮对话，AI 生成后正文区域显示 diff2html 行级对比，应用/取消按钮嵌入对话区底部
+- 底部面板 — AI 目录调整（默认收起）：多轮对话，生成后侧边栏显示 diff 树预览（绿色新增、红色删除线删除、改名显示为删旧增新两行），应用/取消按钮嵌入对话区底部
 - 移动端：汉堡菜单 + 侧边栏抽屉
-
-### 编辑页 (editor.html)
-
-- 左侧：Markdown 文本编辑器
-- 右侧：AI 对话面板（SSE 流式输出，支持"应用到编辑器"）
-- 支持预览（modal）和保存（触发 git commit）
-- 移动端：tab 切换编辑器/AI 面板
 
 ### 历史页 (history.html)
 
@@ -197,7 +188,7 @@ FastAPI 应用 (server/main.py)
 
 ## AI 能力
 
-1. **内容生成/改写**：流式 SSE 返回，编辑页多轮对话交互，AI 自动获取全书目录结构并定位当前编辑章节，可一键应用到编辑器
+1. **内容生成/改写**：流式 SSE 返回，阅读页底部多轮对话面板交互，生成后正文区域显示 diff 预览（diff2html），AI 自动获取全书目录结构并定位当前编辑章节
 2. **目录调整**：支持多轮对话，输入自然语言指令逐步细化目录结构。AI 返回新目录后，侧边栏实时显示 diff 树预览（新增/删除/改名），确认后应用（自动创建/删除对应 .md 文件）
 
 ---
