@@ -75,6 +75,8 @@
     });
 
     // AI Chat
+    let chatHistory = [];
+
     function addMessage(role, text) {
         const div = document.createElement('div');
         div.className = `chat-msg ${role}`;
@@ -100,11 +102,16 @@
             await apiSSE('/api/ai/generate', {
                 prompt: prompt,
                 context: editor.value,
+                book_id: bookId,
+                chapter_id: chapterId,
+                messages: chatHistory,
             }, (chunk) => {
                 fullText += chunk;
                 aiMsg.innerHTML = marked.parse(fullText);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             }, () => {
+                chatHistory.push({ role: 'user', content: prompt });
+                chatHistory.push({ role: 'assistant', content: fullText });
                 // Add "apply" button
                 const applyBtn = document.createElement('button');
                 applyBtn.textContent = '应用到编辑器';

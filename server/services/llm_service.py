@@ -22,11 +22,16 @@ TOC_SYSTEM_PROMPT = """你是一个书籍目录结构编辑助手。用户会给
 [{"id":"ch01","title":"第1章 标题","children":[{"id":"ch01-01","title":"1.1 小节"}]}]"""
 
 
-async def generate_stream(prompt: str, context: str = "") -> AsyncGenerator[str, None]:
+async def generate_stream(prompt: str, context: str = "", toc_info: str = "", history: list[dict] = None) -> AsyncGenerator[str, None]:
     messages = [{"role": "system", "content": WRITING_SYSTEM_PROMPT}]
+    if toc_info:
+        messages.append({"role": "user", "content": f"以下是本书的目录结构，请结合上下文进行写作：\n\n{toc_info}"})
+        messages.append({"role": "assistant", "content": "好的，我已了解本书结构和当前章节位置。"})
     if context:
         messages.append({"role": "user", "content": f"以下是当前章节内容：\n\n{context}"})
         messages.append({"role": "assistant", "content": "好的，我已了解当前内容。请告诉我你需要什么修改。"})
+    if history:
+        messages.extend(history)
     messages.append({"role": "user", "content": prompt})
 
     kwargs = dict(model=LITELLM_MODEL, messages=messages, stream=True)
