@@ -155,6 +155,21 @@
     let originalContent = '';
 
     async function loadChapter(chapterId, title) {
+        if (isContentGenerating) {
+            aiContentPanel.classList.add('shake');
+            setTimeout(() => aiContentPanel.classList.remove('shake'), 400);
+            return;
+        }
+        // Save current chapter's content chat state
+        if (currentChapter && (contentChatHistory.length || pendingContent)) {
+            if (contentActionMsg) { contentActionMsg.remove(); contentActionMsg = null; }
+            contentChatCache.set(currentChapter, {
+                history: contentChatHistory,
+                pending: pendingContent,
+                messages: aiContentMessages.innerHTML,
+            });
+        }
+
         currentChapter = chapterId;
         chapterTitle.textContent = title || chapterId;
 
@@ -169,6 +184,24 @@
         } catch (e) {
             originalContent = '';
             content.innerHTML = `<p style="color:var(--pico-del-color);">${e.message}</p>`;
+        }
+
+        // Restore cached chat state or reset
+        if (contentActionMsg) { contentActionMsg.remove(); contentActionMsg = null; }
+        const cached = contentChatCache.get(chapterId);
+        if (cached) {
+            contentChatHistory = cached.history;
+            pendingContent = cached.pending;
+            aiContentMessages.innerHTML = cached.messages;
+            contentChatCache.delete(chapterId);
+            if (pendingContent) {
+                renderContentDiff(originalContent, pendingContent);
+                appendContentActions();
+            }
+        } else {
+            contentChatHistory = [];
+            pendingContent = null;
+            aiContentMessages.innerHTML = '';
         }
     }
 
@@ -360,6 +393,11 @@
             tocChatHistory = [];
             aiTocMessages.innerHTML = '';
             tocActionMsg = null;
+            contentChatCache.clear();
+            contentChatHistory = [];
+            pendingContent = null;
+            aiContentMessages.innerHTML = '';
+            contentActionMsg = null;
             currentChapter = null;
             loadTOC();
         } catch (e) {
@@ -422,6 +460,8 @@
     let contentChatHistory = [];
     let pendingContent = null;
     let contentActionMsg = null;
+    let isContentGenerating = false;
+    const contentChatCache = new Map();
 
     aiContentToggle.addEventListener('click', () => {
         if (!currentChapter) { alert('请先选择章节'); return; }
@@ -517,6 +557,7 @@
         if (!prompt || !currentChapter) return;
         aiContentPrompt.value = '';
         aiContentGenerate.disabled = true;
+        isContentGenerating = true;
         if (contentActionMsg) { contentActionMsg.remove(); contentActionMsg = null; }
 
         appendContentMsg('user', prompt);
@@ -550,6 +591,7 @@
             statusMsg.textContent = '生成失败：' + e.message;
             statusMsg.style.color = 'var(--pico-del-color)';
         }
+        isContentGenerating = false;
         aiContentGenerate.disabled = false;
     });
 
