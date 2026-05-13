@@ -312,6 +312,10 @@ nav.sidebar .toc-list .toc-list > li > a {
     background: var(--pico-primary-focus);
 }
 
+.toc-list a.toc-empty {
+    color: var(--pico-muted-color);
+}
+
 /* Mobile hamburger */
 .menu-toggle {
     display: none;

@@ -102,7 +102,20 @@ def get_toc(book_id: str) -> dict:
     meta_file = BOOKS_DIR / book_id / "book.json"
     if not meta_file.exists():
         raise FileNotFoundError(f"书籍 {book_id} 不存在")
-    return json.loads(meta_file.read_text())
+    meta = json.loads(meta_file.read_text())
+
+    def mark_has_content(items):
+        for item in items:
+            children = item.get("children")
+            if children:
+                mark_has_content(children)
+            else:
+                file_path = BOOKS_DIR / book_id / f"{item['id']}.md"
+                content = file_path.read_text().strip() if file_path.exists() else ""
+                item["hasContent"] = content != "" and content != f"# {item['title']}"
+
+    mark_has_content(meta.get("chapters", []))
+    return meta
 
 
 def get_chapter(book_id: str, chapter_id: str, commit: str | None = None) -> str:

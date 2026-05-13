@@ -116,6 +116,7 @@
                 renderTocItems(ch.children, subList, depth + 1);
                 li.appendChild(subList);
             } else {
+                if (!ch.hasContent) a.classList.add('toc-empty');
                 a.addEventListener('click', (e) => {
                     e.preventDefault();
                     loadChapter(ch.id, ch.title);
