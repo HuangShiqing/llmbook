@@ -95,7 +95,10 @@
             }
 
             diffBtn.addEventListener('click', async () => {
-                const [c1, c2] = [...selected];
+                const commits = [...selected];
+                const i1 = [...historyList.querySelectorAll('input')].findIndex(cb => cb.value === commits[0]);
+                const i2 = [...historyList.querySelectorAll('input')].findIndex(cb => cb.value === commits[1]);
+                const [c1, c2] = i1 > i2 ? [commits[0], commits[1]] : [commits[1], commits[0]];
                 diffBtn.setAttribute('aria-busy', 'true');
                 try {
                     const data = await apiJSON(`/api/books/${bookId}/diff/${c1}/${c2}`);
