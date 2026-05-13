@@ -488,10 +488,18 @@
 
     async function applyContent() {
         if (!pendingContent) return;
+        const userPrompts = contentChatHistory
+            .filter(m => m.role === 'user')
+            .map(m => {
+                const text = m.content.length > 50 ? m.content.slice(0, 50) + '...' : m.content;
+                return `- ${text}`;
+            });
+        const title = bookTitle.textContent || bookId;
+        const message = `AI改内容《${title}》${currentChapter}\n${userPrompts.join('\n')}`;
         try {
             await apiJSON(`/api/books/${bookId}/chapters/${currentChapter}`, {
                 method: 'PUT',
-                body: JSON.stringify({ content: pendingContent }),
+                body: JSON.stringify({ content: pendingContent, message }),
             });
             originalContent = pendingContent;
             pendingContent = null;

@@ -65,9 +65,9 @@ class SaveChapterRequest(BaseModel):
 
 
 @router.put("/{book_id}/chapters/{chapter_id}")
-def save_chapter(book_id: str, chapter_id: str, req: SaveChapterRequest, user: str = Depends(get_current_user)):
-    message = req.message or f"手动编辑：{chapter_id}"
-    commit_hash = git_service.save_chapter(book_id, chapter_id, req.content, f"{message} (by {user})")
+def save_chapter(book_id: str, chapter_id: str, req: SaveChapterRequest, _: str = Depends(get_current_user)):
+    message = req.message or f"编辑：{chapter_id}"
+    commit_hash = git_service.save_chapter(book_id, chapter_id, req.content, message)
     return {"commit": commit_hash}
 
 
