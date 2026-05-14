@@ -424,17 +424,25 @@
                 method: 'POST',
                 body: JSON.stringify({ book_id: bookId, prompt, messages: tocChatHistory }),
             });
-            pendingTOC = data.chapters;
-
-            statusMsg.removeAttribute('aria-busy');
-            statusMsg.textContent = `已生成新目录（${data.chapters.length} 章，${countLeaves(data.chapters)} 节）`;
 
             tocChatHistory.push({ role: 'user', content: prompt });
-            tocChatHistory.push({ role: 'assistant', content: JSON.stringify(data.chapters) });
 
-            renderTocDiff(currentTocChapters, data.chapters);
-            autoFitSidebar();
-            appendTocActions();
+            if (data.chapters) {
+                pendingTOC = data.chapters;
+                tocChatHistory.push({ role: 'assistant', content: JSON.stringify(data.chapters) });
+
+                statusMsg.removeAttribute('aria-busy');
+                statusMsg.textContent = `已生成新目录（${data.chapters.length} 章，${countLeaves(data.chapters)} 节）`;
+
+                renderTocDiff(currentTocChapters, data.chapters);
+                autoFitSidebar();
+                appendTocActions();
+            } else {
+                tocChatHistory.push({ role: 'assistant', content: data.message });
+                statusMsg.removeAttribute('aria-busy');
+                statusMsg.textContent = data.message;
+            }
+            aiTocMessages.scrollTop = aiTocMessages.scrollHeight;
         } catch (e) {
             statusMsg.removeAttribute('aria-busy');
             statusMsg.textContent = '生成失败：' + e.message;
@@ -580,12 +588,19 @@
             }, () => {
                 contentChatHistory.push({ role: 'user', content: prompt });
                 contentChatHistory.push({ role: 'assistant', content: fullText });
-                pendingContent = fullText;
 
-                statusMsg.removeAttribute('aria-busy');
-                statusMsg.textContent = `已生成新内容（${fullText.length} 字）`;
-                renderContentDiff(originalContent, pendingContent);
-                appendContentActions();
+                const contentMatch = fullText.match(/<content>([\s\S]*?)<\/content>/);
+                if (contentMatch) {
+                    pendingContent = contentMatch[1].trim();
+                    statusMsg.removeAttribute('aria-busy');
+                    statusMsg.textContent = `已生成新内容（${pendingContent.length} 字）`;
+                    renderContentDiff(originalContent, pendingContent);
+                    appendContentActions();
+                } else {
+                    statusMsg.removeAttribute('aria-busy');
+                    statusMsg.textContent = fullText;
+                }
+                aiContentMessages.scrollTop = aiContentMessages.scrollHeight;
             });
         } catch (e) {
             statusMsg.removeAttribute('aria-busy');

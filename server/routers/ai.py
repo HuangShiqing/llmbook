@@ -1,6 +1,6 @@
 import json
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -71,14 +71,23 @@ async def ai_toc(req: TOCRequest, _: str = Depends(get_current_user)):
     toc = git_service.get_toc(req.book_id)
     current_json = json.dumps(toc["chapters"], ensure_ascii=False)
     result = await llm_service.generate_toc(current_json, req.prompt, req.messages)
-    # Strip markdown code block markers if present
     result = result.strip()
-    if result.startswith("```"):
-        result = result.split("\n", 1)[1] if "\n" in result else result[3:]
-    if result.endswith("```"):
-        result = result[:-3].strip()
-    try:
-        new_chapters = json.loads(result)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=500, detail=f"AI 返回的格式无法解析：{result[:200]}")
-    return {"chapters": new_chapters}
+
+    # Try to extract JSON from ```json code block
+    json_str = None
+    if "```json" in result:
+        start = result.index("```json") + 7
+        end = result.index("```", start) if "```" in result[start:] else len(result)
+        json_str = result[start:end].strip()
+    elif result.startswith("["):
+        json_str = result
+
+    if json_str:
+        try:
+            new_chapters = json.loads(json_str)
+            return {"chapters": new_chapters}
+        except json.JSONDecodeError:
+            pass
+
+    # No valid JSON found — treat as discussion
+    return {"message": result}
